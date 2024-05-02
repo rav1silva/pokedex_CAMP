@@ -1,167 +1,190 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
+import 'package:pokedex_ravi/theme/font.dart';
+import 'package:pokedex_ravi/theme/pallete.dart';
 import 'dart:convert';
-import '../theme/pallete.dart';
-import '../widgets/search_field.dart';
+import 'package:pokedex_ravi/widgets/switch_mode.dart';
+
+import 'package:pokedex_ravi/widgets/search_field.dart';
+
+import '../widgets/card_pokemon.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List pokemons = [];
-  TextEditingController controllerSearch = TextEditingController();
+  List pokemonsInit = [];
+  List pokemonsDetails = [];
+  List pokemonsFixed = [];
+  final controllerSearch = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     fetchPokemons();
+    controllerSearch.addListener(searchPokemon);
+  }
+
+  @override
+  void dispose() {
+    controllerSearch.dispose();
+    super.dispose();
   }
 
   fetchPokemons() async {
-    final response = await http.get(Uri.parse('https://pokeapi.co/api/v2/pokemon?limit=151'));
+    final response = await http
+        .get(Uri.parse('https://pokeapi.co/api/v2/pokemon?limit=151'));
     if (response.statusCode == 200) {
       var decodedJson = jsonDecode(response.body);
-      setState(() {
-        pokemons = decodedJson['results'];
-      });
+      pokemonsInit = decodedJson['results'];
+
+      var futures = <Future>[];
+      for (var pokemon in pokemonsInit) {
+        futures.add(fetchPokemonType(pokemon['name']));
+      }
+
+      var types = await Future.wait(futures);
+
+      for (int i = 0; i < pokemonsInit.length; i++) {
+        var pokemon = pokemonsInit[i];
+        String type = types[i];
+
+        String numberFormat = '#${(i + 1).toString().padLeft(3, '0')}';
+
+        var poke = {
+          'name': pokemon['name'],
+          'number': numberFormat,
+          'image':
+              'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${i + 1}.png',
+          'type': type
+        };
+
+        pokemonsDetails.add(poke);
+        pokemonsFixed.add(poke);
+      }
+
+      setState(() {});
     } else {
       throw Exception('Failed to load Pokemons');
+    }
+  }
+
+  Future<String> fetchPokemonType(String pokemonName) async {
+    var url = Uri.parse('https://pokeapi.co/api/v2/pokemon/$pokemonName');
+    var response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      var decodedJson = json.decode(response.body);
+      return decodedJson['types'][0]['type']['name'];
+    } else {
+      return 'normal';
+    }
+  }
+
+  void searchPokemon() {
+    String searchText = controllerSearch.text.toLowerCase();
+
+    if (searchText.isEmpty) {
+      setState(() {
+        pokemonsDetails = pokemonsFixed;
+      });
+    } else {
+      List filteredPokemons = pokemonsDetails.where((pokemon) {
+        String pokemonName = pokemon['name'].toLowerCase();
+        return pokemonName.contains(searchText);
+      }).toList();
+
+      setState(() {
+        pokemonsDetails = filteredPokemons;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            color: Pallete.backgroundColor,
-            padding: const EdgeInsets.all(40.0),
-            child: Column(
+      body: Padding(
+        padding: const EdgeInsets.only(left: 30, right: 30, top: 67),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              width: 428,
-              height: 17,
-              color: Pallete.secondaryColor, // Cor da faixa
-            ),
-          ),
-                SizedBox(height: 50),
-                Row(
-                  children: [
-                    Image.asset(
-                      'assets/images/iconIoasys.png',
-                      height: 24,
-                      width: 24,
-                    ),
-                    SizedBox(width: 10),
-                    Text(
-                      'Ioasys Kanto Pokédex',
-                      style: TextStyle(fontSize: 24, color: Pallete.secondaryColor),
-                    ),
-                  ],
+                SvgPicture.asset(
+                  'assets/img/logo.svg',
+                  semanticsLabel: 'Logo',
+                  height: 32,
+                  width: 24,
                 ),
-                SizedBox(height: 20),
-                Stack(
-                  children: [
-                    Container(
-                      height: 54,
-                      width: 303,
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: Pallete.backgroundColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Pallete.secondaryColor),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 10),
-                            color: Colors.white,
-                            child: Text(
-                              'Buscar',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: controllerSearch,
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                hintText: 'Buscar Pokemon',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                const Padding(
+                  padding: EdgeInsets.only(left: 12.0),
+                  child: Text(
+                    'ioasys pokédex',
+                    style: TextStyle(
+                      fontSize: Font.size24,
+                      fontFamily: Font.poppins,
+                      fontWeight: FontWeight.bold,
+                      color: Pallete.secondaryColor,
                     ),
-                    
-                  ],
+                  ),
+                ),
+                const Spacer(),
+                SwitchMode(),
+              ],
+            ),
+            const SizedBox(height: 31),
+            Row(
+              children: [
+                SearchField(controller: controllerSearch),
+                Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: IconButton(
+                    icon: const Icon(Icons.favorite,
+                        color: Pallete.secondaryColor),
+                    onPressed: () {},
+                  ),
                 ),
               ],
             ),
-          ),
-          
-         /* Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Padding(
-              padding:const EdgeInsets.symmetric(horizontal:
-              child: Image.asset('assets/images/lupa.png',
-              height: 20,
-              width 20,
-              ))
-            ),
-          ),
-        */
-      
-      
-
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 8.0,
-                mainAxisSpacing: 8.0,
-              ),
-              itemCount: pokemons.length,
-              itemBuilder: (context, index) {
-                return Card(
-                  elevation: 2.0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        pokemons[index]['name'],
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.bold,
-                        ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: pokemonsDetails.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 3.0,
                       ),
+                      itemCount: pokemonsDetails.length,
+                      itemBuilder: (context, index) {
+                        return CardPokemon(
+                          pokemonName: pokemonsDetails[index]['name'],
+                          pokemonNumber: pokemonsDetails[index]['number'],
+                          pokemonType: pokemonsDetails[index]['type'],
+                          pokemonImage: pokemonsDetails[index]['image'],
+                        );
+                      },
                     ),
-                  ),
-                );
-                
-              },
             ),
-          ),
-        ],
+            const SizedBox(
+              height: 28,
+              child: Center(
+                child: Icon(
+                  Icons.swipe_down,
+                  color: Pallete.secondaryColor,
+                ),
+              ),
+            )
+          ],
+        ),
       ),
-      
     );
   }
 }
