@@ -41,6 +41,7 @@ class CardPokemon extends StatelessWidget {
                   pokemonNumber,
                   style: TextStyle(
                       fontSize: Font.size8,
+                      fontFamily: Font.poppins,
                       color: Pallete.getColor(pokemonType)),
                 ),
               ),
@@ -66,10 +67,11 @@ class CardPokemon extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.only(top: 3.0, bottom: 3.0),
                 child: Text(
-                  pokemonName,
+                  pokemonName[0].toUpperCase() + pokemonName.substring(1),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 8.0,
+                    fontSize: Font.size8,
+                    fontFamily: Font.poppins,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),

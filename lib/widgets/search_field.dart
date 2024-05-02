@@ -1,3 +1,4 @@
+import '../theme/font.dart';
 import '../theme/pallete.dart';
 import 'package:flutter/material.dart';
 
@@ -9,7 +10,7 @@ class SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 250),
+      constraints: const BoxConstraints(maxWidth: 270),
       child: TextFormField(
         controller: controller,
         decoration: InputDecoration(
@@ -18,6 +19,7 @@ class SearchField extends StatelessWidget {
           labelStyle: const TextStyle(
             color: Pallete.secondaryColor,
             fontSize: 20,
+            fontFamily: Font.poppins,
             fontWeight: FontWeight.bold,
           ),
           contentPadding:

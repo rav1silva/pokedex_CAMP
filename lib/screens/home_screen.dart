@@ -1,9 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:pokedex_ravi/theme/font.dart';
 import 'package:pokedex_ravi/theme/pallete.dart';
+import 'package:pokedex_ravi/widgets/not_found.dart';
 import 'dart:convert';
 import 'package:pokedex_ravi/widgets/switch_mode.dart';
 
@@ -22,6 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List pokemonsInit = [];
   List pokemonsDetails = [];
   List pokemonsFixed = [];
+  bool loading = true;
+  bool nothingFound = false;
   final controllerSearch = TextEditingController();
 
   @override
@@ -70,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       setState(() {});
+      loading = false;
     } else {
       throw Exception('Failed to load Pokemons');
     }
@@ -93,6 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (searchText.isEmpty) {
       setState(() {
         pokemonsDetails = pokemonsFixed;
+        nothingFound = false;
+
       });
     } else {
       List filteredPokemons = pokemonsDetails.where((pokemon) {
@@ -100,9 +107,16 @@ class _HomeScreenState extends State<HomeScreen> {
         return pokemonName.contains(searchText);
       }).toList();
 
-      setState(() {
-        pokemonsDetails = filteredPokemons;
-      });
+      if (filteredPokemons.isEmpty) {
+        setState(() {
+          nothingFound = true;
+        });
+      } else {
+        setState(() {
+          nothingFound = false;
+          pokemonsDetails = filteredPokemons;
+        });
+      }
     }
   }
 
@@ -153,25 +167,33 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            Expanded(
-              child: pokemonsDetails.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : GridView.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 3.0,
+            Visibility(
+              visible: loading,
+              child: const Expanded(
+                  child: Center(child: CircularProgressIndicator())),
+            ),
+            Visibility(
+              visible: !loading,
+              child: Expanded(
+                child: nothingFound
+                    ? const ShowNotFound()
+                    : GridView.builder(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 3.0,
+                        ),
+                        itemCount: pokemonsDetails.length,
+                        itemBuilder: (context, index) {
+                          return CardPokemon(
+                            pokemonName: pokemonsDetails[index]['name'],
+                            pokemonNumber: pokemonsDetails[index]['number'],
+                            pokemonType: pokemonsDetails[index]['type'],
+                            pokemonImage: pokemonsDetails[index]['image'],
+                          );
+                        },
                       ),
-                      itemCount: pokemonsDetails.length,
-                      itemBuilder: (context, index) {
-                        return CardPokemon(
-                          pokemonName: pokemonsDetails[index]['name'],
-                          pokemonNumber: pokemonsDetails[index]['number'],
-                          pokemonType: pokemonsDetails[index]['type'],
-                          pokemonImage: pokemonsDetails[index]['image'],
-                        );
-                      },
-                    ),
+              ),
             ),
             const SizedBox(
               height: 28,

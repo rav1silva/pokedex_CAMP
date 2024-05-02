@@ -30,4 +30,5 @@ class Pallete {
   static const Color whiteColor = Colors.white;
   static const Color backgroundColor = Color(0xffF7F7F7);
   static const Color secondaryColor = Color(0xffEC0344);
+  static const Color cyanColor = Color(0xffBDBDBD);
 }
